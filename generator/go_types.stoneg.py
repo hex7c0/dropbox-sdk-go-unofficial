@@ -168,8 +168,10 @@ class GoTypesBackend(CodeBackend):
             with self.block('type wrap struct'):
                 self.emit('dropbox.Tagged')
                 for field in fields:
-                    if is_void_type(field.data_type) or \
-                            is_primitive_type(field.data_type):
+                    if is_void_type(field.data_type):
+                        continue
+                    if is_primitive_type(field.data_type):
+                        self._generate_field(field, union_field=True, namespace=namespace)
                         continue
                     self._generate_field(field, union_field=True,
                                          namespace=namespace, raw=True)
@@ -191,6 +193,9 @@ class GoTypesBackend(CodeBackend):
                             field.data_type.has_enumerated_subtypes():
                             self.emit("u.{0}, err = Is{1}FromJSON(body)"
                                       .format(field_name, field.data_type.name))
+                        elif is_primitive_type(field.data_type):
+                            self.emit('u.{0} = w.{0}'.format(field_name))
+                            continue
                         else:
                             self.emit('err = json.Unmarshal(body, &u.{0})'
                                             .format(field_name))
